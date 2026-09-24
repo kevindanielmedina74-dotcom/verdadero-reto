@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -200,6 +200,7 @@ textarea:focus{border-color:var(--gold);}
 }
 .question-banner .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:.85; font-weight:800; margin-bottom:6px;}
 .question-banner .q{font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; line-height:1.3;}
+.question-banner .asked-by{font-size:12px; font-weight:700; opacity:.85; margin-top:8px;}
 
 /* ---- Answers list ---- */
 .answers-list{width:100%; display:flex; flex-direction:column; gap:10px;}
@@ -348,6 +349,7 @@ textarea:focus{border-color:var(--gold);}
       <div class="question-banner">
         <div class="eyebrow">Pregunta actual</div>
         <div class="q" id="host-current-q"></div>
+        <div class="asked-by" id="host-asked-by"></div>
       </div>
       <div class="label" style="margin-bottom:10px;">Respuestas en vivo</div>
       <div class="answers-list" id="host-answers"></div>
@@ -390,15 +392,18 @@ textarea:focus{border-color:var(--gold);}
     </div>
   </div>
 
-  <div id="player-waiting" class="card" style="text-align:center;">
-    <div class="label">Estado</div>
-    <p style="font-size:16px; color:var(--muted);">Esperando a que el anfitrión envíe una pregunta o gire la ruleta…</p>
+  <div id="player-waiting" class="card stack">
+    <div class="label">¿Te toca preguntar?</div>
+    <p style="font-size:14px; color:var(--muted); margin:0;">Escribe una pregunta o reto y envíalo a todos.</p>
+    <input type="text" id="player-question-input" placeholder="Ej: ¿Cuál es tu comida favorita?">
+    <button class="btn-primary" onclick="askQuestionAsPlayer()">Enviar pregunta a todos →</button>
   </div>
 
   <div id="player-active-box" class="hidden" style="width:100%;">
     <div class="question-banner">
       <div class="eyebrow">Pregunta actual</div>
       <div class="q" id="player-current-q"></div>
+      <div class="asked-by" id="player-asked-by"></div>
     </div>
 
     <div class="card stack" id="player-answer-box">
@@ -408,6 +413,7 @@ textarea:focus{border-color:var(--gold);}
     </div>
 
     <div id="player-submitted-note" class="status hidden">✅ Respuesta enviada. <strong>Viendo respuestas en vivo</strong></div>
+    <div id="player-asker-note" class="status hidden">📝 <strong>Es tu pregunta.</strong> Viendo respuestas en vivo</div>
 
     <div class="label" style="margin-top:18px; margin-bottom:10px;">Respuestas en vivo</div>
     <div class="answers-list" id="player-answers"></div>
@@ -565,29 +571,49 @@ async function startGame(){
   pollAsHost();
 }
 
+async function sendQuestion(text, askerName){
+  if(!text) return;
+  let room;
+  try{
+    room = await apiGetRoom(state.code);
+  }catch(e){ alert('Error al enviar la pregunta.'); return; }
+
+  room.question = text;
+  room.askedBy = askerName;
+  room.round = (room.round || 0) + 1;
+  room.answers = {};
+  await apiSetRoom(state.code, room);
+}
+
 async function publishQuestion(){
   const input = document.getElementById('host-question-input');
   const q = input.value.trim();
   if(!q) return;
-  let room;
-  try{
-    room = await apiGetRoom(state.code);
-  }catch(e){ alert('Error al leer la sala.'); return; }
-
-  room.question = q;
-  room.round = (room.round || 0) + 1;
-  room.answers = {};
-  await apiSetRoom(state.code, room);
+  await sendQuestion(q, 'Anfitrión');
   input.value = '';
 
   document.getElementById('host-ask-box').classList.add('hidden');
   document.getElementById('host-active-box').classList.remove('hidden');
   document.getElementById('host-current-q').textContent = q;
+  document.getElementById('host-asked-by').textContent = 'Preguntado por: Anfitrión';
+}
+
+async function askQuestionAsPlayer(){
+  const input = document.getElementById('player-question-input');
+  const q = input.value.trim();
+  if(!q) return;
+  await sendQuestion(q, state.name);
+  input.value = '';
 }
 
 async function newQuestion(){
   document.getElementById('host-active-box').classList.add('hidden');
   document.getElementById('host-ask-box').classList.remove('hidden');
+  try{
+    const room = await apiGetRoom(state.code);
+    room.question = null;
+    await apiSetRoom(state.code, room);
+  }catch(e){ /* ignore */ }
 }
 
 function pollAsHost(){
@@ -596,7 +622,10 @@ function pollAsHost(){
     try{
       const room = await apiGetRoom(state.code);
       if(room.question){
+        document.getElementById('host-ask-box').classList.add('hidden');
+        document.getElementById('host-active-box').classList.remove('hidden');
         document.getElementById('host-current-q').textContent = room.question;
+        document.getElementById('host-asked-by').textContent = room.askedBy ? ('Preguntado por: ' + room.askedBy) : '';
       }
       renderAnswers(room, 'host-answers', 'host-answers-empty');
 
@@ -631,14 +660,22 @@ function pollAsPlayer(){
         document.getElementById('player-waiting').classList.add('hidden');
         document.getElementById('player-active-box').classList.remove('hidden');
         document.getElementById('player-current-q').textContent = room.question;
+        document.getElementById('player-asked-by').textContent = room.askedBy ? ('Preguntado por: ' + room.askedBy) : '';
 
+        const isAsker = room.askedBy === state.name;
         const alreadyAnswered = room.answers && room.answers[state.name] && room.answers[state.name].round === room.round;
-        if(alreadyAnswered || state.hasAnsweredRound === room.round){
+        if(isAsker){
+          document.getElementById('player-answer-box').classList.add('hidden');
+          document.getElementById('player-submitted-note').classList.add('hidden');
+          document.getElementById('player-asker-note').classList.remove('hidden');
+        }else if(alreadyAnswered || state.hasAnsweredRound === room.round){
           document.getElementById('player-answer-box').classList.add('hidden');
           document.getElementById('player-submitted-note').classList.remove('hidden');
+          document.getElementById('player-asker-note').classList.add('hidden');
         }else{
           document.getElementById('player-answer-box').classList.remove('hidden');
           document.getElementById('player-submitted-note').classList.add('hidden');
+          document.getElementById('player-asker-note').classList.add('hidden');
         }
         renderAnswers(room, 'player-answers', 'player-answers-empty');
       }else{
