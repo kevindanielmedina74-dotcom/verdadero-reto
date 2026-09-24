@@ -198,9 +198,10 @@ textarea:focus{border-color:var(--gold);}
   margin-bottom:18px;
   box-shadow: 0 10px 24px rgba(255,77,109,0.25);
 }
-.question-banner .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:.85; font-weight:800; margin-bottom:6px;}
+.question-banner .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:.85; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:8px;}
 .question-banner .q{font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; line-height:1.3;}
 .question-banner .asked-by{font-size:12px; font-weight:700; opacity:.85; margin-top:8px;}
+.type-pill{display:inline-block; background:rgba(0,0,0,0.25); padding:3px 10px; border-radius:8px; font-size:11px; letter-spacing:1px;}
 
 /* ---- Answers list ---- */
 .answers-list{width:100%; display:flex; flex-direction:column; gap:10px;}
@@ -241,7 +242,7 @@ textarea:focus{border-color:var(--gold);}
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
   z-index:2;
 }
-#wheel-canvas{
+.wheel-canvas{
   border-radius:50%;
   box-shadow: 0 0 0 8px var(--card2), 0 14px 30px rgba(0,0,0,0.45);
   transition: transform 4s cubic-bezier(0.17, 0.89, 0.28, 1.01);
@@ -275,6 +276,17 @@ textarea:focus{border-color:var(--gold);}
   padding:6px 14px; font-family:'Baloo 2',sans-serif; letter-spacing:3px; font-size:15px; color:var(--gold); font-weight:700;
 }
 .err{color:var(--coral); font-size:14px; font-weight:700; text-align:center; min-height:18px;}
+
+/* ---- Chat ---- */
+.chat-card{display:flex; flex-direction:column; height:60vh; max-height:480px; padding:18px;}
+.chat-list{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin:8px 0 12px; padding-right:2px;}
+.chat-msg{background:var(--bg2); border:1px solid var(--line); border-radius:14px; padding:8px 14px; max-width:82%; align-self:flex-start;}
+.chat-msg.mine{align-self:flex-end; background:rgba(255,200,87,0.14); border-color:rgba(255,200,87,0.4);}
+.chat-msg .who{font-size:11px; font-weight:800; color:var(--gold); margin-bottom:2px; text-transform:uppercase; letter-spacing:.5px;}
+.chat-msg .txt{font-size:15px; color:var(--cream); word-break:break-word;}
+.chat-input-row{display:flex; gap:8px;}
+.chat-input-row input{flex:1;}
+.chat-send-btn{width:auto !important; padding:14px 20px !important; font-size:18px !important;}
 </style>
 </head>
 <body>
@@ -334,45 +346,62 @@ textarea:focus{border-color:var(--gold);}
   </div>
 
   <div class="tabs">
-    <div class="tab active" id="tab-btn-question" onclick="switchTab('question')">❓ Pregunta</div>
-    <div class="tab" id="tab-btn-wheel" onclick="switchTab('wheel')">🎡 Ruleta</div>
+    <div class="tab active" id="host-tabbtn-question" onclick="switchTab('host','question')">❓ Pregunta</div>
+    <div class="tab" id="host-tabbtn-wheel" onclick="switchTab('host','wheel')">🎡 Ruleta</div>
+    <div class="tab" id="host-tabbtn-chat" onclick="switchTab('host','chat')">💬 Chat</div>
   </div>
 
-  <div id="tab-question">
+  <div id="host-tab-question" style="width:100%;">
     <div class="card stack" id="host-ask-box">
-      <div class="label">Escribe la pregunta o el reto</div>
+      <div class="label">Tipo</div>
+      <div class="tabs" style="margin-bottom:0;">
+        <div class="tab active" id="host-type-verdad" onclick="setAskType('host','verdad')">💭 Verdad</div>
+        <div class="tab" id="host-type-reto" onclick="setAskType('host','reto')">🔥 Reto</div>
+      </div>
+      <div class="label" style="margin-top:6px;">Escribe la pregunta o el reto</div>
       <input type="text" id="host-question-input" placeholder="Ej: ¿Cuál es tu comida favorita?">
       <button class="btn-primary" onclick="publishQuestion()">Enviar a todos →</button>
     </div>
 
     <div id="host-active-box" class="hidden" style="width:100%;">
       <div class="question-banner">
-        <div class="eyebrow">Pregunta actual</div>
+        <div class="eyebrow"><span class="type-pill" id="host-type-badge"></span>Pregunta actual</div>
         <div class="q" id="host-current-q"></div>
         <div class="asked-by" id="host-asked-by"></div>
       </div>
       <div class="label" style="margin-bottom:10px;">Respuestas en vivo</div>
       <div class="answers-list" id="host-answers"></div>
       <div class="empty-note hidden" id="host-answers-empty">Esperando respuestas…</div>
-      <button class="btn-coral" style="margin-top:16px;" onclick="newQuestion()">Nueva pregunta →</button>
+      <button class="btn-coral" style="margin-top:16px;" onclick="newQuestion('host')">Nueva pregunta →</button>
     </div>
   </div>
 
-  <div id="tab-wheel" class="hidden" style="width:100%;">
+  <div id="host-tab-wheel" class="hidden" style="width:100%;">
     <div class="card wheel-wrap">
       <div class="label">Gira para ver a quién le toca</div>
       <div class="wheel-pointer"></div>
       <div style="position:relative;">
-        <canvas id="wheel-canvas" width="280" height="280"></canvas>
+        <canvas id="host-wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
         <div class="wheel-hub"></div>
       </div>
-      <button class="btn-primary" style="margin-top:20px;" onclick="spinWheel()">🎡 Girar la ruleta</button>
-      <div class="empty-note hidden" id="wheel-empty">Necesitas al menos 2 jugadores conectados para girar.</div>
+      <button class="btn-primary" style="margin-top:20px;" onclick="spinWheel('host')">🎡 Girar la ruleta</button>
+      <div class="empty-note hidden" id="host-wheel-empty">Necesitas al menos 2 jugadores conectados para girar.</div>
     </div>
     <div id="host-selection-box" class="hidden" style="margin-top:16px;">
       <div class="selection-banner">
-        <div class="eyebrow">Le toca responder a</div>
+        <div class="eyebrow">🎡 La ruleta eligió a</div>
         <div class="name" id="host-selected-name"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="host-tab-chat" class="hidden" style="width:100%;">
+    <div class="card chat-card">
+      <div class="label">Chat de la sala</div>
+      <div class="chat-list" id="host-chat-list"></div>
+      <div class="chat-input-row">
+        <input type="text" id="host-chat-input" placeholder="Escribe un mensaje…" onkeydown="if(event.key==='Enter') sendChatMessage('host')">
+        <button class="btn-primary chat-send-btn" onclick="sendChatMessage('host')">➤</button>
       </div>
     </div>
   </div>
@@ -385,39 +414,76 @@ textarea:focus{border-color:var(--gold);}
     <button class="btn-ghost" onclick="leaveToLanding()">Salir</button>
   </div>
 
-  <div id="player-selection-box" class="hidden">
-    <div class="selection-banner">
-      <div class="eyebrow">🎡 La ruleta eligió a</div>
-      <div class="name" id="player-selected-name"></div>
+  <div class="tabs">
+    <div class="tab active" id="player-tabbtn-question" onclick="switchTab('player','question')">❓ Pregunta</div>
+    <div class="tab" id="player-tabbtn-wheel" onclick="switchTab('player','wheel')">🎡 Ruleta</div>
+    <div class="tab" id="player-tabbtn-chat" onclick="switchTab('player','chat')">💬 Chat</div>
+  </div>
+
+  <div id="player-tab-question" style="width:100%;">
+    <div id="player-waiting" class="card stack">
+      <div class="label">Tipo</div>
+      <div class="tabs" style="margin-bottom:0;">
+        <div class="tab active" id="player-type-verdad" onclick="setAskType('player','verdad')">💭 Verdad</div>
+        <div class="tab" id="player-type-reto" onclick="setAskType('player','reto')">🔥 Reto</div>
+      </div>
+      <div class="label" style="margin-top:6px;">¿Te toca preguntar?</div>
+      <p style="font-size:14px; color:var(--muted); margin:0;">Escribe una pregunta o reto y envíalo a todos.</p>
+      <input type="text" id="player-question-input" placeholder="Ej: ¿Cuál es tu comida favorita?">
+      <button class="btn-primary" onclick="askQuestionAsPlayer()">Enviar pregunta a todos →</button>
+    </div>
+
+    <div id="player-active-box" class="hidden" style="width:100%;">
+      <div class="question-banner">
+        <div class="eyebrow"><span class="type-pill" id="player-type-badge"></span>Pregunta actual</div>
+        <div class="q" id="player-current-q"></div>
+        <div class="asked-by" id="player-asked-by"></div>
+      </div>
+
+      <div class="card stack" id="player-answer-box">
+        <div class="label">Tu respuesta</div>
+        <textarea id="player-answer-input" placeholder="Escribe aquí…"></textarea>
+        <button class="btn-primary" onclick="submitAnswer()">Enviar respuesta →</button>
+      </div>
+
+      <div id="player-submitted-note" class="status hidden">✅ Respuesta enviada. <strong>Viendo respuestas en vivo</strong></div>
+      <div id="player-asker-note" class="status hidden">📝 <strong>Es tu pregunta.</strong> Viendo respuestas en vivo</div>
+
+      <div class="label" style="margin-top:18px; margin-bottom:10px;">Respuestas en vivo</div>
+      <div class="answers-list" id="player-answers"></div>
+      <div class="empty-note hidden" id="player-answers-empty">Todavía no hay respuestas…</div>
+      <button class="btn-coral" style="margin-top:16px;" onclick="newQuestion('player')">Nueva pregunta →</button>
     </div>
   </div>
 
-  <div id="player-waiting" class="card stack">
-    <div class="label">¿Te toca preguntar?</div>
-    <p style="font-size:14px; color:var(--muted); margin:0;">Escribe una pregunta o reto y envíalo a todos.</p>
-    <input type="text" id="player-question-input" placeholder="Ej: ¿Cuál es tu comida favorita?">
-    <button class="btn-primary" onclick="askQuestionAsPlayer()">Enviar pregunta a todos →</button>
+  <div id="player-tab-wheel" class="hidden" style="width:100%;">
+    <div class="card wheel-wrap">
+      <div class="label">Gira para ver a quién le toca</div>
+      <div class="wheel-pointer"></div>
+      <div style="position:relative;">
+        <canvas id="player-wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
+        <div class="wheel-hub"></div>
+      </div>
+      <button class="btn-primary" style="margin-top:20px;" onclick="spinWheel('player')">🎡 Girar la ruleta</button>
+      <div class="empty-note hidden" id="player-wheel-empty">Necesitas al menos 2 jugadores conectados para girar.</div>
+    </div>
+    <div id="player-selection-box" class="hidden" style="margin-top:16px;">
+      <div class="selection-banner">
+        <div class="eyebrow">🎡 La ruleta eligió a</div>
+        <div class="name" id="player-selected-name"></div>
+      </div>
+    </div>
   </div>
 
-  <div id="player-active-box" class="hidden" style="width:100%;">
-    <div class="question-banner">
-      <div class="eyebrow">Pregunta actual</div>
-      <div class="q" id="player-current-q"></div>
-      <div class="asked-by" id="player-asked-by"></div>
+  <div id="player-tab-chat" class="hidden" style="width:100%;">
+    <div class="card chat-card">
+      <div class="label">Chat de la sala</div>
+      <div class="chat-list" id="player-chat-list"></div>
+      <div class="chat-input-row">
+        <input type="text" id="player-chat-input" placeholder="Escribe un mensaje…" onkeydown="if(event.key==='Enter') sendChatMessage('player')">
+        <button class="btn-primary chat-send-btn" onclick="sendChatMessage('player')">➤</button>
+      </div>
     </div>
-
-    <div class="card stack" id="player-answer-box">
-      <div class="label">Tu respuesta</div>
-      <textarea id="player-answer-input" placeholder="Escribe aquí…"></textarea>
-      <button class="btn-primary" onclick="submitAnswer()">Enviar respuesta →</button>
-    </div>
-
-    <div id="player-submitted-note" class="status hidden">✅ Respuesta enviada. <strong>Viendo respuestas en vivo</strong></div>
-    <div id="player-asker-note" class="status hidden">📝 <strong>Es tu pregunta.</strong> Viendo respuestas en vivo</div>
-
-    <div class="label" style="margin-top:18px; margin-bottom:10px;">Respuestas en vivo</div>
-    <div class="answers-list" id="player-answers"></div>
-    <div class="empty-note hidden" id="player-answers-empty">Todavía no hay respuestas…</div>
   </div>
 </div>
 
@@ -428,6 +494,12 @@ let state = {
   name: null,
   pollTimer: null,
   hasAnsweredRound: 0,   // round number the player last answered
+};
+
+let askType = { host: 'verdad', player: 'verdad' };
+let wheelState = {
+  host:   { players: [], rotation: 0 },
+  player: { players: [], rotation: 0 }
 };
 
 function show(id){
@@ -489,7 +561,7 @@ async function goCreate(){
   const code = randomCode();
   state.role = 'host';
   state.code = code;
-  const room = { question: null, round: 0, players: {}, answers: {}, createdAt: Date.now() };
+  const room = { question: null, questionType: null, askedBy: null, round: 0, players: {}, answers: {}, chat: [], createdAt: Date.now() };
   try{
     await apiSetRoom(code, room);
   }catch(e){
@@ -531,6 +603,7 @@ async function joinRoom(){
   state.hasAnsweredRound = 0;
   document.getElementById('player-game-code').textContent = codeRaw;
   show('screen-player-game');
+  switchTab('player', 'question');
   pollAsPlayer();
 }
 
@@ -567,11 +640,25 @@ function renderPlayersList(room){
 async function startGame(){
   document.getElementById('host-game-code').textContent = state.code;
   show('screen-host-game');
-  drawWheelFromRoom();
+  switchTab('host', 'question');
   pollAsHost();
 }
 
-async function sendQuestion(text, askerName){
+/* ---- Verdad / Reto type ---- */
+function setAskType(prefix, type){
+  askType[prefix] = type;
+  document.getElementById(prefix + '-type-verdad').classList.toggle('active', type === 'verdad');
+  document.getElementById(prefix + '-type-reto').classList.toggle('active', type === 'reto');
+}
+
+function updateTypeBadge(prefix, type){
+  const el = document.getElementById(prefix + '-type-badge');
+  if(!el) return;
+  el.textContent = type === 'reto' ? '🔥 RETO' : '💭 VERDAD';
+}
+
+/* ---- Questions ---- */
+async function sendQuestion(text, askerName, type){
   if(!text) return;
   let room;
   try{
@@ -579,6 +666,7 @@ async function sendQuestion(text, askerName){
   }catch(e){ alert('Error al enviar la pregunta.'); return; }
 
   room.question = text;
+  room.questionType = type;
   room.askedBy = askerName;
   room.round = (room.round || 0) + 1;
   room.answers = {};
@@ -589,33 +677,169 @@ async function publishQuestion(){
   const input = document.getElementById('host-question-input');
   const q = input.value.trim();
   if(!q) return;
-  await sendQuestion(q, 'Anfitrión');
+  const type = askType.host;
+  await sendQuestion(q, 'Anfitrión', type);
   input.value = '';
 
   document.getElementById('host-ask-box').classList.add('hidden');
   document.getElementById('host-active-box').classList.remove('hidden');
   document.getElementById('host-current-q').textContent = q;
   document.getElementById('host-asked-by').textContent = 'Preguntado por: Anfitrión';
+  updateTypeBadge('host', type);
 }
 
 async function askQuestionAsPlayer(){
   const input = document.getElementById('player-question-input');
   const q = input.value.trim();
   if(!q) return;
-  await sendQuestion(q, state.name);
+  await sendQuestion(q, state.name, askType.player);
   input.value = '';
 }
 
-async function newQuestion(){
-  document.getElementById('host-active-box').classList.add('hidden');
-  document.getElementById('host-ask-box').classList.remove('hidden');
+async function clearQuestion(){
   try{
     const room = await apiGetRoom(state.code);
     room.question = null;
+    room.questionType = null;
+    room.askedBy = null;
     await apiSetRoom(state.code, room);
   }catch(e){ /* ignore */ }
 }
 
+async function newQuestion(prefix){
+  await clearQuestion();
+  if(prefix === 'host'){
+    document.getElementById('host-active-box').classList.add('hidden');
+    document.getElementById('host-ask-box').classList.remove('hidden');
+  }
+  // El lado del jugador se actualiza solo, vía sondeo (poll)
+}
+
+/* ---- Wheel (compartida host/player) ---- */
+const wheelColors = ['#FF4D6D','#FFC857','#2EC4B6','#8B7CF6','#FF9F5A','#4EA1FF','#FF6BCB','#6EE7B7'];
+
+async function refreshWheelPlayers(prefix){
+  try{
+    const room = await apiGetRoom(state.code);
+    wheelState[prefix].players = Object.keys(room.players || {});
+  }catch(e){ wheelState[prefix].players = []; }
+  paintWheel(prefix);
+  const emptyEl = document.getElementById(prefix + '-wheel-empty');
+  if(emptyEl) emptyEl.classList.toggle('hidden', wheelState[prefix].players.length >= 2);
+}
+
+function checkAndRepaintWheel(prefix, room){
+  const newPlayers = Object.keys(room.players || {});
+  const cur = wheelState[prefix].players;
+  if(newPlayers.length !== cur.length || newPlayers.some((p,i)=>p!==cur[i])){
+    wheelState[prefix].players = newPlayers;
+    const tabEl = document.getElementById(prefix + '-tab-wheel');
+    if(tabEl && !tabEl.classList.contains('hidden')) paintWheel(prefix);
+    const emptyEl = document.getElementById(prefix + '-wheel-empty');
+    if(emptyEl) emptyEl.classList.toggle('hidden', newPlayers.length >= 2);
+  }
+}
+
+function paintWheel(prefix){
+  const canvas = document.getElementById(prefix + '-wheel-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width/2, cy = canvas.height/2, r = canvas.width/2 - 4;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const players = wheelState[prefix].players;
+  const n = players.length;
+  if(n === 0){
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = '#2C1B63'; ctx.fill();
+    ctx.fillStyle = '#B8A9D9'; ctx.font = '600 14px Manrope'; ctx.textAlign = 'center';
+    ctx.fillText('Sin jugadores', cx, cy);
+    return;
+  }
+  const slice = (Math.PI*2) / n;
+  for(let i=0;i<n;i++){
+    const start = i*slice, end = start+slice;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle = wheelColors[i % wheelColors.length];
+    ctx.fill();
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(start + slice/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#1B0E3B';
+    ctx.font = '800 15px Baloo 2';
+    const label = players[i].length > 10 ? players[i].slice(0,9)+'…' : players[i];
+    ctx.fillText(label, r - 14, 5);
+    ctx.restore();
+  }
+}
+
+async function spinWheel(prefix){
+  const players = wheelState[prefix].players;
+  if(players.length < 2) return;
+  const canvas = document.getElementById(prefix + '-wheel-canvas');
+  const n = players.length;
+  const slice = 360 / n;
+  const winnerIndex = Math.floor(Math.random() * n);
+  const sliceCenterDeg = winnerIndex*slice + slice/2;
+  const extraSpins = 5*360;
+  const target = extraSpins + (270 - sliceCenterDeg);
+  wheelState[prefix].rotation += target;
+  canvas.style.transform = 'rotate(' + wheelState[prefix].rotation + 'deg)';
+
+  setTimeout(async () => {
+    const winnerName = players[winnerIndex];
+    try{
+      const room = await apiGetRoom(state.code);
+      room.selectedPlayer = winnerName;
+      room.selectionId = (room.selectionId || 0) + 1;
+      await apiSetRoom(state.code, room);
+    }catch(e){ /* ignore */ }
+  }, 4100);
+}
+
+/* ---- Chat (compartido host/player) ---- */
+function renderChat(prefix, room){
+  const list = document.getElementById(prefix + '-chat-list');
+  if(!list) return;
+  const msgs = room.chat || [];
+  const myName = prefix === 'host' ? 'Anfitrión' : state.name;
+  const wasAtBottom = (list.scrollTop + list.clientHeight) >= (list.scrollHeight - 30);
+  if(msgs.length === 0){
+    list.innerHTML = '<div class="empty-note">Todavía no hay mensajes…</div>';
+    return;
+  }
+  list.innerHTML = '';
+  msgs.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (m.name === myName ? ' mine' : '');
+    div.innerHTML = '<div class="who">' + escapeHtml(m.name) + '</div><div class="txt">' + escapeHtml(m.text) + '</div>';
+    list.appendChild(div);
+  });
+  if(wasAtBottom) list.scrollTop = list.scrollHeight;
+}
+
+async function sendChatMessage(prefix){
+  const input = document.getElementById(prefix + '-chat-input');
+  const text = input.value.trim();
+  if(!text) return;
+  const senderName = prefix === 'host' ? 'Anfitrión' : state.name;
+  let room;
+  try{
+    room = await apiGetRoom(state.code);
+  }catch(e){ return; }
+  room.chat = room.chat || [];
+  room.chat.push({ name: senderName, text: text, at: Date.now() });
+  if(room.chat.length > 150) room.chat = room.chat.slice(-150);
+  await apiSetRoom(state.code, room);
+  input.value = '';
+  renderChat(prefix, room);
+  const list = document.getElementById(prefix + '-chat-list');
+  if(list) list.scrollTop = list.scrollHeight;
+}
+
+/* ---- Polling ---- */
 function pollAsHost(){
   stopPolling();
   const tick = async () => {
@@ -626,15 +850,15 @@ function pollAsHost(){
         document.getElementById('host-active-box').classList.remove('hidden');
         document.getElementById('host-current-q').textContent = room.question;
         document.getElementById('host-asked-by').textContent = room.askedBy ? ('Preguntado por: ' + room.askedBy) : '';
+        updateTypeBadge('host', room.questionType);
+      }else{
+        document.getElementById('host-ask-box').classList.remove('hidden');
+        document.getElementById('host-active-box').classList.add('hidden');
       }
       renderAnswers(room, 'host-answers', 'host-answers-empty');
+      renderChat('host', room);
+      checkAndRepaintWheel('host', room);
 
-      const newPlayers = Object.keys(room.players || {});
-      if(newPlayers.length !== wheelPlayers.length || newPlayers.some((p,i)=>p!==wheelPlayers[i])){
-        wheelPlayers = newPlayers;
-        if(!document.getElementById('tab-wheel').classList.contains('hidden')) paintWheel();
-        document.getElementById('wheel-empty').classList.toggle('hidden', wheelPlayers.length >= 2);
-      }
       if(room.selectedPlayer && room.selectionId){
         document.getElementById('host-selected-name').textContent = room.selectedPlayer;
         document.getElementById('host-selection-box').classList.remove('hidden');
@@ -661,6 +885,7 @@ function pollAsPlayer(){
         document.getElementById('player-active-box').classList.remove('hidden');
         document.getElementById('player-current-q').textContent = room.question;
         document.getElementById('player-asked-by').textContent = room.askedBy ? ('Preguntado por: ' + room.askedBy) : '';
+        updateTypeBadge('player', room.questionType);
 
         const isAsker = room.askedBy === state.name;
         const alreadyAnswered = room.answers && room.answers[state.name] && room.answers[state.name].round === room.round;
@@ -682,6 +907,9 @@ function pollAsPlayer(){
         document.getElementById('player-waiting').classList.remove('hidden');
         document.getElementById('player-active-box').classList.add('hidden');
       }
+
+      renderChat('player', room);
+      checkAndRepaintWheel('player', room);
     }catch(e){ /* ignore */ }
   };
   tick();
@@ -727,85 +955,15 @@ async function submitAnswer(){
   document.getElementById('player-submitted-note').classList.remove('hidden');
 }
 
-/* ---- Tabs ---- */
-function switchTab(name){
-  document.getElementById('tab-question').classList.toggle('hidden', name !== 'question');
-  document.getElementById('tab-wheel').classList.toggle('hidden', name !== 'wheel');
-  document.getElementById('tab-btn-question').classList.toggle('active', name === 'question');
-  document.getElementById('tab-btn-wheel').classList.toggle('active', name === 'wheel');
-  if(name === 'wheel') drawWheelFromRoom();
-}
-
-/* ---- Wheel ---- */
-const wheelColors = ['#FF4D6D','#FFC857','#2EC4B6','#8B7CF6','#FF9F5A','#4EA1FF','#FF6BCB','#6EE7B7'];
-let wheelPlayers = [];
-let wheelRotation = 0;
-
-async function drawWheelFromRoom(){
-  try{
-    const room = await apiGetRoom(state.code);
-    wheelPlayers = Object.keys(room.players || {});
-  }catch(e){ wheelPlayers = []; }
-  paintWheel();
-  document.getElementById('wheel-empty').classList.toggle('hidden', wheelPlayers.length >= 2);
-}
-
-function paintWheel(){
-  const canvas = document.getElementById('wheel-canvas');
-  const ctx = canvas.getContext('2d');
-  const cx = canvas.width/2, cy = canvas.height/2, r = canvas.width/2 - 4;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const n = wheelPlayers.length;
-  if(n === 0){
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = '#2C1B63'; ctx.fill();
-    ctx.fillStyle = '#B8A9D9'; ctx.font = '600 14px Manrope'; ctx.textAlign = 'center';
-    ctx.fillText('Sin jugadores', cx, cy);
-    return;
-  }
-  const slice = (Math.PI*2) / n;
-  for(let i=0;i<n;i++){
-    const start = i*slice, end = start+slice;
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end);
-    ctx.closePath();
-    ctx.fillStyle = wheelColors[i % wheelColors.length];
-    ctx.fill();
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(start + slice/2);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#1B0E3B';
-    ctx.font = '800 15px Baloo 2';
-    const label = wheelPlayers[i].length > 10 ? wheelPlayers[i].slice(0,9)+'…' : wheelPlayers[i];
-    ctx.fillText(label, r - 14, 5);
-    ctx.restore();
-  }
-}
-
-async function spinWheel(){
-  if(wheelPlayers.length < 2) return;
-  const canvas = document.getElementById('wheel-canvas');
-  const n = wheelPlayers.length;
-  const slice = 360 / n;
-  const winnerIndex = Math.floor(Math.random() * n);
-  const sliceCenterDeg = winnerIndex*slice + slice/2;
-  const extraSpins = 5*360;
-  const target = extraSpins + (270 - sliceCenterDeg);
-  wheelRotation += target;
-  canvas.style.transform = 'rotate(' + wheelRotation + 'deg)';
-
-  setTimeout(async () => {
-    const winnerName = wheelPlayers[winnerIndex];
-    try{
-      const room = await apiGetRoom(state.code);
-      room.selectedPlayer = winnerName;
-      room.selectionId = (room.selectionId || 0) + 1;
-      await apiSetRoom(state.code, room);
-      document.getElementById('host-selected-name').textContent = winnerName;
-      document.getElementById('host-selection-box').classList.remove('hidden');
-    }catch(e){ /* ignore */ }
-  }, 4100);
+/* ---- Tabs (compartidas host/player) ---- */
+function switchTab(prefix, name){
+  ['question','wheel','chat'].forEach(t => {
+    const panel = document.getElementById(prefix + '-tab-' + t);
+    if(panel) panel.classList.toggle('hidden', t !== name);
+    const btn = document.getElementById(prefix + '-tabbtn-' + t);
+    if(btn) btn.classList.toggle('active', t === name);
+  });
+  if(name === 'wheel') refreshWheelPlayers(prefix);
 }
 
 function escapeHtml(str){
